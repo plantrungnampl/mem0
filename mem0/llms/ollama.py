@@ -14,25 +14,7 @@ from mem0.memory.utils import extract_json
 
 class OllamaLLM(LLMBase):
     def __init__(self, config: Optional[Union[BaseLlmConfig, OllamaConfig, Dict]] = None):
-        # Convert to OllamaConfig if needed
-        if config is None:
-            config = OllamaConfig()
-        elif isinstance(config, dict):
-            config = OllamaConfig(**config)
-        elif isinstance(config, BaseLlmConfig) and not isinstance(config, OllamaConfig):
-            # Convert BaseLlmConfig to OllamaConfig
-            config = OllamaConfig(
-                model=config.model,
-                temperature=config.temperature,
-                api_key=config.api_key,
-                max_tokens=config.max_tokens,
-                top_p=config.top_p,
-                top_k=config.top_k,
-                enable_vision=config.enable_vision,
-                vision_details=config.vision_details,
-                http_client_proxies=config.http_client,
-            )
-
+        config = self._convert_config(config, OllamaConfig)
         super().__init__(config)
 
         if not self.config.model:
@@ -81,9 +63,7 @@ class OllamaLLM(LLMBase):
                 if isinstance(arguments, str):
                     arguments = json.loads(extract_json(arguments))
 
-                processed_response["tool_calls"].append(
-                    {"name": name, "arguments": arguments}
-                )
+                processed_response["tool_calls"].append({"name": name, "arguments": arguments})
 
             return processed_response
         else:

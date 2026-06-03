@@ -13,25 +13,7 @@ from mem0.llms.base import LLMBase
 
 class AnthropicLLM(LLMBase):
     def __init__(self, config: Optional[Union[BaseLlmConfig, AnthropicConfig, Dict]] = None):
-        # Convert to AnthropicConfig if needed
-        if config is None:
-            config = AnthropicConfig()
-        elif isinstance(config, dict):
-            config = AnthropicConfig(**config)
-        elif isinstance(config, BaseLlmConfig) and not isinstance(config, AnthropicConfig):
-            # Convert BaseLlmConfig to AnthropicConfig
-            config = AnthropicConfig(
-                model=config.model,
-                temperature=config.temperature,
-                api_key=config.api_key,
-                max_tokens=config.max_tokens,
-                top_p=config.top_p,
-                top_k=config.top_k,
-                enable_vision=config.enable_vision,
-                vision_details=config.vision_details,
-                http_client_proxies=config.http_client,
-            )
-
+        config = self._convert_config(config, AnthropicConfig)
         super().__init__(config)
 
         if not self.config.model:
