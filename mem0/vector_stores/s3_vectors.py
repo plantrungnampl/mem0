@@ -152,7 +152,7 @@ class S3Vectors(VectorStoreBase):
                     payload = existing.payload
             except Exception as e:
                 logger.error(f"update: failed to fetch existing vector for {vector_id}: {e}")
-                return
+                raise
         self.insert(vectors=[vector], payloads=[payload], ids=[vector_id])
 
     def get(self, vector_id) -> Optional[OutputData]:

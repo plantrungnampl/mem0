@@ -270,6 +270,7 @@ class TurbopufferDB(VectorStoreBase):
             logger.info(f"Namespace {self.collection_name} deleted successfully")
         except Exception as e:
             logger.error(f"Error deleting namespace {self.collection_name}: {e}")
+            raise
 
     def col_info(self) -> Dict:
         """
@@ -287,7 +288,8 @@ class TurbopufferDB(VectorStoreBase):
                 "created_at": str(metadata.created_at),
                 "updated_at": str(metadata.updated_at),
             }
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error getting namespace metadata for {self.collection_name}: {e}")
             return {"name": self.collection_name}
 
     def list(self, filters: Optional[Dict] = None, top_k: int = 100) -> list:
@@ -329,7 +331,8 @@ class TurbopufferDB(VectorStoreBase):
         try:
             metadata = self.namespace.metadata()
             return metadata.approx_row_count
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error getting row count for {self.collection_name}: {e}")
             return 0
 
     def reset(self):

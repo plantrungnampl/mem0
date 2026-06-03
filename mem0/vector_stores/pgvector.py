@@ -516,8 +516,8 @@ class PGVector(VectorStoreBase):
                 self.connection_pool.close()
             else:
                 self.connection_pool.closeall()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error closing connection pool: {e}")
 
     def reset(self) -> None:
         """Reset the index by deleting and recreating it."""

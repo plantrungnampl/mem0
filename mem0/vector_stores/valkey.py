@@ -317,6 +317,7 @@ class ValkeyDB(VectorStoreBase):
                 logger.debug(f"Successfully inserted vector with ID {id}")
             except KeyError as e:
                 logger.error(f"Error inserting vector with ID {id}: Missing required field {e}")
+                raise
             except Exception as e:
                 logger.exception(f"Error inserting vector with ID {id}: {e}")
                 raise
@@ -524,6 +525,7 @@ class ValkeyDB(VectorStoreBase):
             logger.debug(f"Successfully updated vector with ID {vector_id}")
         except KeyError as e:
             logger.error(f"Error updating vector with ID {vector_id}: Missing required field {e}")
+            raise
         except Exception as e:
             logger.exception(f"Error updating vector with ID {vector_id}: {e}")
             raise

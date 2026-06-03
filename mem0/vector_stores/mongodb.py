@@ -123,7 +123,7 @@ class MongoDB(VectorStoreBase):
             return collection
         except PyMongoError as e:
             logger.error(f"Error creating collection and search index: {e}")
-            return None
+            raise
 
     def insert(
         self, vectors: List[List[float]], payloads: Optional[List[Dict]] = None, ids: Optional[List[str]] = None
@@ -147,6 +147,7 @@ class MongoDB(VectorStoreBase):
             logger.info(f"Inserted {len(data)} documents into '{self.collection_name}'.")
         except PyMongoError as e:
             logger.error(f"Error inserting data: {e}")
+            raise
 
     def search(self, query: str, vectors: List[float], top_k=5, filters: Optional[Dict] = None) -> List[OutputData]:
         """
@@ -270,6 +271,7 @@ class MongoDB(VectorStoreBase):
                 logger.warning(f"No document found with ID '{vector_id}' to delete.")
         except PyMongoError as e:
             logger.error(f"Error deleting document: {e}")
+            raise
 
     def update(self, vector_id: str, vector: Optional[List[float]] = None, payload: Optional[Dict] = None) -> None:
         """
@@ -296,6 +298,7 @@ class MongoDB(VectorStoreBase):
                     logger.warning(f"No document found with ID '{vector_id}' to update.")
             except PyMongoError as e:
                 logger.error(f"Error updating document: {e}")
+                raise
 
     def get(self, vector_id: str) -> Optional[OutputData]:
         """
@@ -341,6 +344,7 @@ class MongoDB(VectorStoreBase):
             logger.info(f"Deleted collection '{self.collection_name}'.")
         except PyMongoError as e:
             logger.error(f"Error deleting collection: {e}")
+            raise
 
     def col_info(self) -> Dict[str, Any]:
         """

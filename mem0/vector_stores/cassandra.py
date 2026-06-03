@@ -501,6 +501,6 @@ class CassandraDB(VectorStoreBase):
             if self.cluster:
                 self.cluster.shutdown()
                 logger.info("Cassandra cluster connection closed")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error closing Cassandra cluster connection: {e}")
 

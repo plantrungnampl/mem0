@@ -196,7 +196,8 @@ def _safe_deepcopy_config(config):
         if hasattr(config, "model_dump"):
             try:
                 clone_dict = config.model_dump()
-            except Exception:
+            except Exception as e:
+                logger.debug(f"model_dump() failed, using __dict__: {e}")
                 clone_dict = dict(config.__dict__)
         else:
             clone_dict = dict(config.__dict__)
@@ -210,8 +211,8 @@ def _safe_deepcopy_config(config):
 
         try:
             return config_class(**clone_dict)
-        except Exception:
-            logger.debug("Config reconstruction failed, returning shallow dict clone")
+        except Exception as e:
+            logger.debug(f"Config reconstruction failed, returning shallow dict clone: {e}")
             return type("Config", (), clone_dict)()
 
 
@@ -745,7 +746,7 @@ class Memory(MemoryBase):
             )
         except Exception as e:
             logger.error(f"LLM extraction failed: {e}")
-            return []
+            raise
 
         # Parse response
         try:
@@ -760,7 +761,7 @@ class Memory(MemoryBase):
                     extracted_memories = json.loads(extracted_json, strict=False).get("memory", [])
         except Exception as e:
             logger.error(f"Error parsing extraction response: {e}")
-            extracted_memories = []
+            raise
 
         if not extracted_memories:
             # Save messages even if nothing extracted
@@ -772,8 +773,8 @@ class Memory(MemoryBase):
         try:
             mem_embeddings_list = self.embedding_model.embed_batch(mem_texts, "add")
             embed_map = dict(zip(mem_texts, mem_embeddings_list))
-        except Exception:
-            # Fallback: embed individually
+        except Exception as e:
+            logger.warning(f"Batch embedding failed, falling back to individual embedding: {e}")
             embed_map = {}
             for text in mem_texts:
                 try:
@@ -832,8 +833,8 @@ class Memory(MemoryBase):
                 ids=all_ids,
                 payloads=all_payloads,
             )
-        except Exception:
-            # Fallback: insert one by one
+        except Exception as e:
+            logger.warning(f"Batch insert failed, falling back to individual inserts: {e}")
             for mid, vec, pay in zip(all_ids, all_vectors, all_payloads):
                 try:
                     self.vector_store.insert(vectors=[vec], ids=[mid], payloads=[pay])
@@ -854,8 +855,8 @@ class Memory(MemoryBase):
         ]
         try:
             self.db.batch_add_history(history_records)
-        except Exception:
-            # Fallback: add one by one
+        except Exception as e:
+            logger.warning(f"Batch history add failed, falling back to individual inserts: {e}")
             for hr in history_records:
                 try:
                     self.db.add_history(hr["memory_id"], None, hr["new_memory"], "ADD", created_at=hr.get("created_at"))
@@ -885,13 +886,14 @@ class Memory(MemoryBase):
                 # 7b: Single batch embed for all unique entities
                 try:
                     entity_embeddings = self.embedding_model.embed_batch(entity_texts, "add")
-                except Exception:
-                    # Fallback: embed individually, use None for failures
+                except Exception as e:
+                    logger.warning(f"Batch entity embedding failed, falling back to individual embedding: {e}")
                     entity_embeddings = []
                     for t in entity_texts:
                         try:
                             entity_embeddings.append(self.embedding_model.embed(t, "add"))
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to embed entity text '{t}': {e}")
                             entity_embeddings.append(None)
 
                 # Filter out entities with failed embeddings
@@ -2162,7 +2164,7 @@ class AsyncMemory(MemoryBase):
             )
         except Exception as e:
             logger.error(f"LLM extraction failed (async): {e}")
-            return []
+            raise
 
         # Parse response
         try:
@@ -2177,7 +2179,7 @@ class AsyncMemory(MemoryBase):
                     extracted_memories = json.loads(extracted_json, strict=False).get("memory", [])
         except Exception as e:
             logger.error(f"Error parsing extraction response (async): {e}")
-            extracted_memories = []
+            raise
 
         if not extracted_memories:
             await asyncio.to_thread(self.db.save_messages, messages, session_scope)
@@ -2188,7 +2190,8 @@ class AsyncMemory(MemoryBase):
         try:
             mem_embeddings_list = await asyncio.to_thread(self.embedding_model.embed_batch, mem_texts, "add")
             embed_map = dict(zip(mem_texts, mem_embeddings_list))
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Batch embedding failed (async), falling back to individual embedding: {e}")
             embed_map = {}
             for text in mem_texts:
                 try:
@@ -2247,7 +2250,8 @@ class AsyncMemory(MemoryBase):
                 ids=all_ids,
                 payloads=all_payloads,
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Batch insert failed (async), falling back to individual inserts: {e}")
             for mid, vec, pay in zip(all_ids, all_vectors, all_payloads):
                 try:
                     await asyncio.to_thread(self.vector_store.insert, vectors=[vec], ids=[mid], payloads=[pay])
@@ -2268,7 +2272,8 @@ class AsyncMemory(MemoryBase):
         ]
         try:
             await asyncio.to_thread(self.db.batch_add_history, history_records)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Batch history add failed (async), falling back to individual inserts: {e}")
             for hr in history_records:
                 try:
                     await asyncio.to_thread(
@@ -2301,12 +2306,14 @@ class AsyncMemory(MemoryBase):
                 # 7b: Batch embed entities
                 try:
                     entity_embeddings = await asyncio.to_thread(self.embedding_model.embed_batch, entity_texts, "add")
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Batch entity embedding failed (async), falling back to individual embedding: {e}")
                     entity_embeddings = []
                     for t in entity_texts:
                         try:
                             entity_embeddings.append(await asyncio.to_thread(self.embedding_model.embed, t, "add"))
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to embed entity text '{t}' (async): {e}")
                             entity_embeddings.append(None)
 
                 valid = [(i, k) for i, k in enumerate(ordered_keys) if entity_embeddings[i] is not None]

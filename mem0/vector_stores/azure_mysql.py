@@ -541,5 +541,5 @@ class AzureMySQL(VectorStoreBase):
         try:
             if hasattr(self, 'connection_pool') and self.connection_pool:
                 self.connection_pool.close()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error closing MySQL connection pool: {e}")

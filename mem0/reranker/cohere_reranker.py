@@ -1,7 +1,10 @@
+import logging
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from mem0.reranker.base import BaseReranker
+
+logger = logging.getLogger(__name__)
 
 try:
     import cohere
@@ -78,8 +81,8 @@ class CohereReranker(BaseReranker):
                 
             return reranked_docs
 
-        except Exception:
-            # Fallback to original order if reranking fails
+        except Exception as e:
+            logger.warning(f"Cohere reranking failed, falling back to original order: {e}")
             for doc in documents:
                 doc['rerank_score'] = 0.0
             return documents[:top_k] if top_k else documents

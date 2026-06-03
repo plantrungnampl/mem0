@@ -274,7 +274,8 @@ class PineconeDB(VectorStoreBase):
             response = self.index.query(**query_params, namespace=self.namespace)
 
             return self._parse_output(response.matches)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Keyword search failed: {e}")
             return None
 
     def delete(self, vector_id: Union[str, int]):
@@ -346,6 +347,7 @@ class PineconeDB(VectorStoreBase):
             logger.info(f"Index {self.collection_name} deleted successfully")
         except Exception as e:
             logger.error(f"Error deleting index {self.collection_name}: {e}")
+            raise
 
     def col_info(self) -> Dict:
         """

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Literal, Optional
 
@@ -6,6 +7,8 @@ from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 from mem0.configs.embeddings.base import BaseEmbedderConfig
 from mem0.embeddings.base import EmbeddingBase
 from mem0.utils.gcp_auth import GCPAuthenticator
+
+logger = logging.getLogger(__name__)
 
 
 class VertexAIEmbedding(EmbeddingBase):
@@ -29,8 +32,8 @@ class VertexAIEmbedding(EmbeddingBase):
                 credentials_path=self.config.vertex_credentials_json,
                 project_id=getattr(self.config, 'google_project_id', None)
             )
-        except Exception:
-            # Fall back to original behavior for backward compatibility
+        except Exception as e:
+            logger.warning(f"GCPAuthenticator setup failed, falling back to credential path: {e}")
             credentials_path = self.config.vertex_credentials_json
             if credentials_path:
                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
