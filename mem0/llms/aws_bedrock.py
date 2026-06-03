@@ -9,8 +9,8 @@ try:
 except ImportError:
     raise ImportError("The 'boto3' library is required. Please install it using 'pip install boto3'.")
 
-from mem0.configs.llms.base import BaseLlmConfig
 from mem0.configs.llms.aws_bedrock import AWSBedrockConfig
+from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
 from mem0.memory.utils import extract_json
 
@@ -709,5 +709,6 @@ class AWSBedrockLLM(LLMBase):
                     contentType="application/json",
                 )
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Connection test failed: {e}")
             return False

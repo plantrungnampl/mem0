@@ -353,6 +353,7 @@ class Databricks(VectorStoreBase):
                 return index
         except Exception as e:
             logger.error(f"Error making index_type: {self.index_type} for index {self.fully_qualified_index_name}: {e}")
+            raise
 
     def _format_sql_value(self, v):
         """
@@ -381,7 +382,7 @@ class Databricks(VectorStoreBase):
         if isinstance(v, dict):
             try:
                 s = json.dumps(v)
-            except Exception:
+            except (TypeError, ValueError):
                 s = str(v)
             s = s.replace("'", "''")
             return f"'{s}'"
@@ -819,15 +820,15 @@ class Databricks(VectorStoreBase):
                 if "metadata" in payload and payload["metadata"]:
                     try:
                         payload.update(json.loads(payload["metadata"]))
-                    except Exception:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.warning(f"Failed to parse metadata for row: {e}")
                 memory_id = row_dict.get("memory_id") or row_dict.get("id")
                 payload['data'] = payload['memory']
                 memory_results.append(MemoryResult(id=memory_id, payload=payload))
             return [memory_results]
         except Exception as e:
             logger.error(f"Failed to list memories: {e}")
-            return []
+            raise
 
     def reset(self):
         """Reset the vector search index and underlying source table.

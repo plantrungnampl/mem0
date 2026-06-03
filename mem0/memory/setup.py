@@ -139,8 +139,8 @@ def get_or_create_user_id(vector_store=None):
             # Ensure we never return None from vector store
             if stored_id is not None:
                 return stored_id
-    except Exception:
-        pass
+    except Exception as e:
+        _logger.debug("Failed to get existing user_id from vector store: %s", e)
 
     # If we get here, we need to insert the user_id
     try:
@@ -148,7 +148,7 @@ def get_or_create_user_id(vector_store=None):
         vector_store.insert(
             vectors=[[0.1] * dims], payloads=[{"user_id": user_id, "type": "user_identity"}], ids=[user_id]
         )
-    except Exception:
-        pass
+    except Exception as e:
+        _logger.debug("Failed to insert user_id into vector store: %s", e)
 
     return user_id

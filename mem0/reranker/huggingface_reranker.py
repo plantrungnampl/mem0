@@ -1,13 +1,17 @@
-from typing import List, Dict, Any, Union
+import logging
+from typing import Any, Dict, List, Union
+
 import numpy as np
 
-from mem0.reranker.base import BaseReranker
 from mem0.configs.rerankers.base import BaseRerankerConfig
 from mem0.configs.rerankers.huggingface import HuggingFaceRerankerConfig
+from mem0.reranker.base import BaseReranker
+
+logger = logging.getLogger(__name__)
 
 try:
-    from transformers import AutoTokenizer, AutoModelForSequenceClassification
     import torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
@@ -139,8 +143,8 @@ class HuggingFaceReranker(BaseReranker):
 
             return reranked_docs
 
-        except Exception:
-            # Fallback to original order if reranking fails
+        except Exception as e:
+            logger.warning(f"HuggingFace reranking failed, falling back to original order: {e}")
             for doc in documents:
                 doc['rerank_score'] = 0.0
             final_top_k = top_k or self.config.top_k

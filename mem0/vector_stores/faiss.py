@@ -247,6 +247,7 @@ class FAISS(VectorStoreBase):
 
         except Exception as e:
             logger.warning(f"Failed to save FAISS index: {e}")
+            raise
 
     def _parse_output(self, scores, ids, top_k=None) -> List[OutputData]:
         """
@@ -565,6 +566,7 @@ class FAISS(VectorStoreBase):
                 logger.info(f"Deleted collection {self.collection_name}")
             except Exception as e:
                 logger.warning(f"Failed to delete collection: {e}")
+                raise
 
         self.index = None
         self.docstore = {}
