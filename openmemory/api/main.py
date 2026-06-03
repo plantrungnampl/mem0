@@ -1,20 +1,30 @@
 import datetime
+import os
 from uuid import uuid4
 
+from app.auth import verify_api_key
 from app.config import DEFAULT_APP_ID, USER_ID
 from app.database import Base, SessionLocal, engine
 from app.mcp_server import setup_mcp_server
 from app.models import App, User
-from app.routers import apps_router, backup_router, config_router, memories_router, stats_router
-from fastapi import FastAPI
+from app.routers import (
+    apps_router,
+    backup_router,
+    config_router,
+    memories_router,
+    stats_router,
+)
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 
 app = FastAPI(title="OpenMemory API")
 
+_allowed_origins = os.environ.get("OPENMEMORY_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,6 +32,7 @@ app.add_middleware(
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
+
 
 # Check for USER_ID and create default user if needed
 def create_default_user():
@@ -32,10 +43,7 @@ def create_default_user():
         if not user:
             # Create default user
             user = User(
-                id=uuid4(),
-                user_id=USER_ID,
-                name="Default User",
-                created_at=datetime.datetime.now(datetime.UTC)
+                id=uuid4(), user_id=USER_ID, name="Default User", created_at=datetime.datetime.now(datetime.UTC)
             )
             db.add(user)
             db.commit()
@@ -51,10 +59,7 @@ def create_default_app():
             return
 
         # Check if app already exists
-        existing_app = db.query(App).filter(
-            App.name == DEFAULT_APP_ID,
-            App.owner_id == user.id
-        ).first()
+        existing_app = db.query(App).filter(App.name == DEFAULT_APP_ID, App.owner_id == user.id).first()
 
         if existing_app:
             return
@@ -71,6 +76,7 @@ def create_default_app():
     finally:
         db.close()
 
+
 # Create default user on startup
 create_default_user()
 create_default_app()
@@ -78,12 +84,13 @@ create_default_app()
 # Setup MCP server
 setup_mcp_server(app)
 
-# Include routers
-app.include_router(memories_router)
-app.include_router(apps_router)
-app.include_router(stats_router)
-app.include_router(config_router)
-app.include_router(backup_router)
+# Include routers (all protected by API key auth when OPENMEMORY_API_KEY is set)
+_auth_deps = [Depends(verify_api_key)]
+app.include_router(memories_router, dependencies=_auth_deps)
+app.include_router(apps_router, dependencies=_auth_deps)
+app.include_router(stats_router, dependencies=_auth_deps)
+app.include_router(config_router, dependencies=_auth_deps)
+app.include_router(backup_router, dependencies=_auth_deps)
 
 # Add pagination support
 add_pagination(app)

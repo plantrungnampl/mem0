@@ -21,8 +21,6 @@ from mem0.configs.vector_stores.vertex_ai_vector_search import (
 )
 from mem0.vector_stores.base import VectorStoreBase
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +67,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             "project": self.project_id,
             "location": self.region,
         }
-        
+
         # Support both credentials_path and service_account_json
         if hasattr(config, "credentials_path") and config.credentials_path:
             logger.debug("Using credentials from file: %s", config.credentials_path)
