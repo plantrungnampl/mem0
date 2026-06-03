@@ -1,4 +1,3 @@
-import json
 import os
 from typing import Dict, List, Optional
 
@@ -9,7 +8,6 @@ except ImportError:
 
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
-from mem0.memory.utils import extract_json
 
 
 class GroqLLM(LLMBase):
@@ -21,36 +19,6 @@ class GroqLLM(LLMBase):
 
         api_key = self.config.api_key or os.getenv("GROQ_API_KEY")
         self.client = Groq(api_key=api_key)
-
-    def _parse_response(self, response, tools):
-        """
-        Process the response based on whether tools are used or not.
-
-        Args:
-            response: The raw response from API.
-            tools: The list of tools provided in the request.
-
-        Returns:
-            str or dict: The processed response.
-        """
-        if tools:
-            processed_response = {
-                "content": response.choices[0].message.content,
-                "tool_calls": [],
-            }
-
-            if response.choices[0].message.tool_calls:
-                for tool_call in response.choices[0].message.tool_calls:
-                    processed_response["tool_calls"].append(
-                        {
-                            "name": tool_call.function.name,
-                            "arguments": json.loads(extract_json(tool_call.function.arguments)),
-                        }
-                    )
-
-            return processed_response
-        else:
-            return response.choices[0].message.content
 
     def generate_response(
         self,
